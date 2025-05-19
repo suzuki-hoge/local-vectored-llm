@@ -15,7 +15,7 @@ pdf-extract = "0.9.0"
 walkdir = "2.4.0"
 futures = "0.3.30"
 chromadb = "2.2.2"
-ollama-rs = "0.1.9"
+ollama-rs = "0.3.1"
 
 [[bin]]
 name = "vectorize"
