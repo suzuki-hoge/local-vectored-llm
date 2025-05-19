@@ -42,7 +42,7 @@ $ cargo run --bin vectorize <ディレクトリパス>
 もしくは
 
 ```bash
-$ ./target/release/vectorize <ディレクトリパス>
+$ ./dist/vectorize <ディレクトリパス>
 ```
 
 ### クエリの実行
@@ -56,7 +56,7 @@ $ cargo run --bin query --query "あなたの質問"
 もしくは
 
 ```bash
-$ ./target/release/query --query "あなたの質問"
+$ ./dist/query --query "あなたの質問"
 ```
 
 ## サポートされているファイル形式
