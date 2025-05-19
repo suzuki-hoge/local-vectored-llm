@@ -1,0 +1,5 @@
+edition = "2021"
+required_version = "1.8.0"
+use_small_heuristics = "Max"
+max_width = 120
+combine_control_expr = false

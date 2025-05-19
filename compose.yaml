@@ -1,0 +1,23 @@
+version: '3'
+services:
+  ollama:
+    build:
+      context: ./docker/ollama
+      dockerfile: Dockerfile
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  chromadb:
+    build:
+      context: ./docker/chromadb
+      dockerfile: Dockerfile
+    ports:
+      - "18888:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+
+volumes:
+  ollama_data:
+  chroma_data:
