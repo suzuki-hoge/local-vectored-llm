@@ -1,19 +1,12 @@
 //! ローカルファイルをベクトル化してChroma DBに保存するためのバイナリ。
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Parser;
 use futures::StreamExt;
 use std::path::PathBuf;
 use tracing::{info, warn};
 
 use local_vectored_llm::{chromadb::ChromaClient, file::FileProcessorRegistry, init_logging, ollama::OllamaClient};
-
-// 固定値の定義
-const OLLAMA_URL: &str = "http://localhost:11434";
-const MODEL: &str = "deepseek-r1:1.5b";
-const CHROMA_URL: &str = "http://localhost:18888";
-const COLLECTION: &str = "local_files";
-const BATCH_SIZE: usize = 10;
 
 /// コマンドライン引数
 #[derive(Parser, Debug)]
@@ -35,11 +28,11 @@ async fn main() -> Result<()> {
     info!("ディレクトリ内のファイルをベクトル化しています: {}", args.dir.display());
 
     // クライアントの作成
-    let ollama_client = OllamaClient::new(OLLAMA_URL, MODEL);
-    let chroma_client = ChromaClient::new(CHROMA_URL, COLLECTION);
+    let ollama_client = OllamaClient::new();
+    let chroma_client = ChromaClient::new();
 
     // Chroma DBコレクションの初期化
-    info!("Chroma DBコレクションを初期化しています: {}", COLLECTION);
+    info!("Chroma DBコレクションを初期化しています");
     chroma_client.init_collection().await?;
 
     // ファイルプロセッサレジストリの作成
@@ -54,7 +47,7 @@ async fn main() -> Result<()> {
     let mut processed_count = 0;
     let mut chunk_count = 0;
 
-    for file_batch in files.chunks(BATCH_SIZE) {
+    for file_batch in files.chunks(10) {
         let mut all_chunks = Vec::new();
 
         // バッチ内の各ファイルを処理

@@ -1,107 +1,61 @@
 //! 埋め込み生成のためのOllama APIクライアント。
 
-use anyhow::{Context, Result};
-use reqwest::Client;
-use serde::{Deserialize, Serialize};
-use std::time::Duration;
+use anyhow::Result;
+use ollama_rs::generation::completion::request::GenerationRequest;
+use ollama_rs::Ollama;
 use tracing::debug;
 
 use crate::AppError;
 
 /// Ollama APIのクライアント。
 pub struct OllamaClient {
-    client: Client,
-    base_url: String,
+    client: Ollama,
     model: String,
+}
+
+impl Default for OllamaClient {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl OllamaClient {
     /// 新しいOllamaクライアントを作成します。
-    pub fn new(base_url: &str, model: &str) -> Self {
-        let client = Client::builder().timeout(Duration::from_secs(60)).build().expect("HTTPクライアントの構築に失敗しました");
-
-        Self { client, base_url: base_url.to_string(), model: model.to_string() }
+    pub fn new() -> Self {
+        let client = Ollama::new("localhost".to_string(), 11434);
+        Self { client, model: "deepseek-r1:1.5b".to_string() }
     }
 
     /// 指定されたテキストの埋め込みを生成します。
     pub async fn generate_embedding(&self, text: &str) -> Result<Vec<f32>> {
-        let url = format!("{}/api/embeddings", self.base_url);
-
-        let request = EmbeddingRequest { model: self.model.clone(), prompt: text.to_string() };
-
         debug!("長さ{}のテキストの埋め込みを生成しています", text.len());
 
         let response = self
             .client
-            .post(&url)
-            .json(&request)
-            .send()
+            .generate_embeddings(self.model.clone(), text.to_string(), None)
             .await
-            .with_context(|| format!("Ollama APIへのリクエスト送信に失敗しました: {}", url))?;
+            .map_err(|e| AppError::OllamaApi(format!("埋め込み生成に失敗しました: {}", e)))?;
 
-        if !response.status().is_success() {
-            let status = response.status();
-            let error_text = response.text().await.unwrap_or_default();
-            return Err(AppError::OllamaApi(format!("Ollama APIがエラーを返しました {}: {}", status, error_text)).into());
-        }
+        // Vec<f64>からVec<f32>に変換
+        let embeddings_f32: Vec<f32> = response.embeddings.into_iter().map(|val| val as f32).collect();
 
-        let response: EmbeddingResponse = response.json().await.context("Ollama APIレスポンスの解析に失敗しました")?;
-
-        Ok(response.embedding)
+        Ok(embeddings_f32)
     }
 
     /// 指定されたプロンプトの補完を生成します。
     pub async fn generate_completion(&self, prompt: &str) -> Result<String> {
-        let url = format!("{}/api/generate", self.base_url);
-
-        let request = CompletionRequest { model: self.model.clone(), prompt: prompt.to_string(), stream: false };
-
         debug!("長さ{}のプロンプトの補完を生成しています", prompt.len());
 
+        // リクエストを作成
+        let request = GenerationRequest::new(self.model.clone(), prompt.to_string());
+
+        // 生成リクエストを送信
         let response = self
             .client
-            .post(&url)
-            .json(&request)
-            .send()
+            .generate(request)
             .await
-            .with_context(|| format!("Ollama APIへのリクエスト送信に失敗しました: {}", url))?;
-
-        if !response.status().is_success() {
-            let status = response.status();
-            let error_text = response.text().await.unwrap_or_default();
-            return Err(AppError::OllamaApi(format!("Ollama APIがエラーを返しました {}: {}", status, error_text)).into());
-        }
-
-        let response: CompletionResponse = response.json().await.context("Ollama APIレスポンスの解析に失敗しました")?;
+            .map_err(|e| AppError::OllamaApi(format!("補完生成に失敗しました: {}", e)))?;
 
         Ok(response.response)
     }
-}
-
-/// 埋め込み生成リクエスト。
-#[derive(Debug, Serialize)]
-struct EmbeddingRequest {
-    model: String,
-    prompt: String,
-}
-
-/// 埋め込み生成レスポンス。
-#[derive(Debug, Deserialize)]
-struct EmbeddingResponse {
-    embedding: Vec<f32>,
-}
-
-/// 補完生成リクエスト。
-#[derive(Debug, Serialize)]
-struct CompletionRequest {
-    model: String,
-    prompt: String,
-    stream: bool,
-}
-
-/// 補完生成レスポンス。
-#[derive(Debug, Deserialize)]
-struct CompletionResponse {
-    model: String,
-    response: String,
 }

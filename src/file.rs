@@ -1,17 +1,22 @@
 //! ファイル処理ユーティリティ。
 
 use anyhow::{Context, Result};
+use pdf_extract::extract_text;
 use std::fs;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
-use pdf_extract::extract_text;
 
 use crate::{AppError, DocumentChunk, DocumentMetadata, FileProcessor};
 
 /// ファイルプロセッサのレジストリ。
 pub struct FileProcessorRegistry {
     processors: Vec<Box<dyn FileProcessor>>,
+}
+
+impl Default for FileProcessorRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FileProcessorRegistry {
@@ -66,8 +71,8 @@ pub struct TextFileProcessor;
 
 impl FileProcessor for TextFileProcessor {
     fn process(&self, path: &Path) -> Result<Vec<DocumentChunk>> {
-        let content =
-            fs::read_to_string(path).with_context(|| format!("テキストファイルの読み込みに失敗しました: {}", path.display()))?;
+        let content = fs::read_to_string(path)
+            .with_context(|| format!("テキストファイルの読み込みに失敗しました: {}", path.display()))?;
 
         // 段落による単純なチャンク分割
         let chunks = chunk_text(&content, 1000);
