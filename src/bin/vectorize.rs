@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
 
     // クライアントの作成
     let ollama_client = OllamaClient::new();
-    let chroma_client = ChromaClient::new();
+    let chroma_client = ChromaClient::new().await?;
 
     // Chroma DBコレクションの初期化
     info!("Chroma DBコレクションを初期化しています");

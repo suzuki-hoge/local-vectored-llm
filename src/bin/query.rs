@@ -6,12 +6,12 @@ use tracing::info;
 
 use local_vectored_llm::{chromadb::ChromaClient, ollama::OllamaClient};
 
-/// ベクトル検索を実行します。
+/// コマンドライン引数
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[clap(author, version, about)]
 struct Args {
     /// 検索クエリ
-    #[arg(short, long)]
+    #[clap(name = "QUERY")]
     query: String,
 }
 
@@ -25,7 +25,7 @@ async fn main() -> Result<()> {
 
     // クライアントを初期化
     let ollama = OllamaClient::new();
-    let chroma = ChromaClient::new();
+    let chroma = ChromaClient::new().await?;
 
     // コレクションを初期化
     chroma.init_collection().await?;

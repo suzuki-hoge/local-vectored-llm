@@ -22,7 +22,7 @@ impl Default for OllamaClient {
 impl OllamaClient {
     /// 新しいOllamaクライアントを作成します。
     pub fn new() -> Self {
-        let client = Ollama::new("localhost".to_string(), 11434);
+        let client = Ollama::new("http://localhost".to_string(), 11434);
         Self { client, model: "deepseek-r1:1.5b".to_string() }
     }
 

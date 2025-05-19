@@ -1,8 +1,9 @@
 //! ベクトルの保存と取得のためのChroma DBクライアント。
 
 use anyhow::Result;
-use chromadb::v1::client::{ChromaClient as Client, ChromaClientOptions};
-use chromadb::v1::collection::{CollectionEntries, QueryOptions};
+use chromadb::client::ChromaAuthMethod;
+use chromadb::client::{ChromaClient as ChromaClientImpl, ChromaClientOptions};
+use chromadb::collection::{CollectionEntries, QueryOptions};
 use serde_json::{Map, Value};
 use tracing::debug;
 
@@ -10,29 +11,28 @@ use crate::{AppError, DocumentChunk};
 
 /// Chroma DB APIのクライアント。
 pub struct ChromaClient {
-    client: Client,
+    client: ChromaClientImpl,
     collection_name: String,
-}
-
-impl Default for ChromaClient {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl ChromaClient {
     /// 新しいChroma DBクライアントを作成します。
-    pub fn new() -> Self {
-        let options = ChromaClientOptions { url: "http://localhost:18888".to_string() };
-        let client = Client::new(options);
-        Self { client, collection_name: "local_files".to_string() }
+    pub async fn new() -> Result<Self> {
+        let options = ChromaClientOptions {
+            url: Some("http://localhost:18888".to_string()),
+            auth: ChromaAuthMethod::None,
+            database: "default_database".to_string(),
+        };
+        let client = ChromaClientImpl::new(options).await?;
+        Ok(Self { client, collection_name: "local_files".to_string() })
     }
 
     /// コレクションを初期化します。
     pub async fn init_collection(&self) -> Result<()> {
         debug!("コレクションを初期化しています: {}", self.collection_name);
         self.client
-            .get_or_create_collection(&self.collection_name, None)
+            .create_collection(&self.collection_name, None, true)
+            .await
             .map_err(|e| AppError::ChromaDb(format!("コレクションの初期化に失敗しました: {}", e)))?;
         Ok(())
     }
@@ -54,7 +54,8 @@ impl ChromaClient {
 
         let collection = self
             .client
-            .get_or_create_collection(&self.collection_name, None)
+            .get_collection(&self.collection_name)
+            .await
             .map_err(|e| AppError::ChromaDb(format!("コレクションの取得に失敗しました: {}", e)))?;
 
         let id_strings: Vec<String> =
@@ -67,7 +68,11 @@ impl ChromaClient {
                 metadata.insert("source".to_string(), Value::String(chunk.source.clone()));
                 metadata.insert("file_type".to_string(), Value::String(chunk.metadata.file_type.clone()));
                 metadata.insert("chunk_index".to_string(), Value::Number(chunk.metadata.chunk_index.into()));
-                metadata.insert("additional".to_string(), chunk.metadata.additional.clone());
+                if let Some(additional_str) = chunk.metadata.additional.as_str() {
+                    metadata.insert("additional".to_string(), Value::String(additional_str.to_string()));
+                } else {
+                    metadata.insert("additional".to_string(), Value::String(chunk.metadata.additional.to_string()));
+                }
                 metadata
             })
             .collect();
@@ -84,6 +89,7 @@ impl ChromaClient {
         };
         collection
             .upsert(entries, None)
+            .await
             .map_err(|e| AppError::ChromaDb(format!("ドキュメントの追加に失敗しました: {}", e)))?;
 
         Ok(())
@@ -93,32 +99,34 @@ impl ChromaClient {
     pub async fn query(&self, query_embedding: &[f32], n_results: usize) -> Result<Vec<QueryResult>> {
         let collection = self
             .client
-            .get_or_create_collection(&self.collection_name, None)
+            .get_collection(&self.collection_name)
+            .await
             .map_err(|e| AppError::ChromaDb(format!("コレクションの取得に失敗しました: {}", e)))?;
 
         debug!("{}件の結果をコレクションから検索しています", n_results);
 
         let query = QueryOptions {
-            query_texts: None,
             query_embeddings: Some(vec![query_embedding.to_vec()]),
+            query_texts: None,
+            n_results: Some(n_results),
             where_metadata: None,
             where_document: None,
-            n_results: Some(n_results),
             include: Some(vec!["documents", "metadatas", "distances"]),
         };
         let results = collection
             .query(query, None)
+            .await
             .map_err(|e| AppError::ChromaDb(format!("ドキュメントの検索に失敗しました: {}", e)))?;
 
-        let documents = results.documents.as_ref().and_then(|v| v.first()).and_then(|v| v.as_ref());
-        let metadatas = results.metadatas.as_ref().and_then(|v| v.first()).and_then(|v| v.as_ref());
-        let distances = results.distances.as_ref().and_then(|v| v.first()).and_then(|v| v.as_ref());
+        let documents = results.documents.as_ref().and_then(|v| v.first());
+        let metadatas = results.metadatas.as_ref().and_then(|v| v.first());
+        let distances = results.distances.as_ref().and_then(|v| v.first());
 
         let mut query_results = Vec::new();
         if let (Some(documents), Some(metadatas), Some(distances)) = (documents, metadatas, distances) {
             for i in 0..documents.len() {
                 query_results.push(QueryResult {
-                    document: documents[i].clone().unwrap_or_default(),
+                    document: documents[i].clone(),
                     metadata: metadatas[i].clone().unwrap_or_default(),
                     distance: distances[i],
                 });

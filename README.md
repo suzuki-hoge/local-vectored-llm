@@ -50,13 +50,13 @@ $ ./dist/vectorize <ディレクトリパス>
 保存されたベクトルを使用して質問に回答するには、以下のコマンドを実行します。
 
 ```bash
-$ cargo run --bin query --query "あなたの質問"
+$ cargo run --bin query "あなたの質問"
 ```
 
 もしくは
 
 ```bash
-$ ./dist/query --query "あなたの質問"
+$ ./dist/query "あなたの質問"
 ```
 
 ## サポートされているファイル形式
