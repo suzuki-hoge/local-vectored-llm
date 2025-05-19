@@ -29,6 +29,8 @@ $ docker compose up --detach
 
 これにより Ollama サーバー ( Deepseek モデル付き ) と Chroma DB サーバーが起動します。
 
+初回ビルド時は、Docker Desktop で 12G ほどメモリ割り当てを行う必要があります。
+
 ## 使用方法
 
 ### ファイルのベクトル化
@@ -36,13 +38,13 @@ $ docker compose up --detach
 ローカルファイルをベクトル化して Chroma DB に保存するには、以下のコマンドを実行します。
 
 ```bash
-$ cargo run --bin vectorize <ディレクトリパス>
+$ cargo run --bin load -- --input <dir-path>
 ```
 
 もしくは
 
 ```bash
-$ ./dist/vectorize <ディレクトリパス>
+$ ./dist/load <dir-path>
 ```
 
 ### クエリの実行
@@ -50,13 +52,13 @@ $ ./dist/vectorize <ディレクトリパス>
 保存されたベクトルを使用して質問に回答するには、以下のコマンドを実行します。
 
 ```bash
-$ cargo run --bin query "あなたの質問"
+$ cargo run --bin chat -- --interactive
 ```
 
 もしくは
 
 ```bash
-$ ./dist/query "あなたの質問"
+$ ./dist/chat -- --interactive
 ```
 
 ## サポートされているファイル形式

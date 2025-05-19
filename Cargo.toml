@@ -20,11 +20,11 @@ pdf = "0.8.1"
 markdown = "0.3.0"
 
 [[bin]]
-name = "rag-load"
+name = "load"
 path = "src/bin/load.rs"
 
 [[bin]]
-name = "rag-chat"
+name = "chat"
 path = "src/bin/chat.rs"
 
 [lib]

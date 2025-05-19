@@ -1,49 +1,43 @@
-use crate::embedding::EmbeddingStore;
-use crate::utils::is_supported_file;
 use anyhow::Result;
-use ollama_rs::generation::embeddings::request::{EmbeddingsInput, GenerateEmbeddingsRequest};
-use ollama_rs::Ollama;
-use pdf::file::FileOptions;
-use std::fs;
 use std::path::Path;
-use walkdir::WalkDir;
+
+pub mod markdown;
+pub mod pdf;
+pub mod text;
 
 pub struct DocumentProcessor {
     chunk_size: usize,
-    embedding_store: EmbeddingStore,
-    ollama: Ollama,
 }
 
 impl DocumentProcessor {
-    pub async fn new(chunk_size: usize) -> Result<Self> {
-        Ok(Self {
-            chunk_size,
-            embedding_store: EmbeddingStore::new().await?,
-            ollama: Ollama::new("http://localhost:11434", 11434),
-        })
+    pub fn new(chunk_size: usize) -> Self {
+        Self { chunk_size }
     }
 
-    pub async fn process_directory(&self, dir_path: &Path) -> Result<()> {
-        for entry in WalkDir::new(dir_path) {
+    pub async fn process_directory(&self, dir_path: &Path) -> Result<Vec<ProcessedDocument>> {
+        let mut documents = Vec::new();
+        for entry in walkdir::WalkDir::new(dir_path) {
             let entry = entry?;
             let path = entry.path();
 
-            if path.is_file() && is_supported_file(path) {
-                self.process_file(path).await?;
+            if path.is_file() && Self::is_supported_file(path) {
+                let processed = self.process_file(path).await?;
+                documents.extend(processed);
             }
         }
-        Ok(())
+        Ok(documents)
     }
 
-    async fn process_file(&self, path: &Path) -> Result<()> {
+    async fn process_file(&self, path: &Path) -> Result<Vec<ProcessedDocument>> {
         tracing::info!("Processing file: {:?}", path);
 
         let content = match path.extension().and_then(|ext| ext.to_str()) {
-            Some("txt") | Some("md") => fs::read_to_string(path)?,
-            Some("pdf") => self.extract_text_from_pdf(path)?,
+            Some("txt") => text::extract_text(path)?,
+            Some("md") => markdown::extract_text(path)?,
+            Some("pdf") => pdf::extract_text(path)?,
             _ => {
                 tracing::warn!("Unsupported file type: {:?}", path);
-                return Ok(());
+                return Ok(Vec::new());
             }
         };
 
@@ -51,39 +45,34 @@ impl DocumentProcessor {
         let splitter = TextSplitter::new(self.chunk_size, self.chunk_size / 10);
         let chunks = splitter.split(&content);
 
-        // 各チャンクに対して埋め込みを生成して保存
-        for (i, chunk) in chunks.iter().enumerate() {
-            let embedding = self.generate_embedding(chunk).await?;
-            self.embedding_store.store_embeddings(chunk, embedding, path.to_string_lossy().to_string(), i).await?;
-        }
-
-        Ok(())
+        // 各チャンクをProcessedDocumentとして返す
+        Ok(chunks
+            .into_iter()
+            .enumerate()
+            .map(|(i, chunk)| ProcessedDocument {
+                content: chunk,
+                source: path.to_string_lossy().to_string(),
+                chunk_index: i,
+            })
+            .collect())
     }
 
-    fn extract_text_from_pdf(&self, path: &Path) -> Result<String> {
-        let pdf = FileOptions::cached().open(path)?;
-        let mut text = String::new();
-
-        for page in pdf.pages().flatten() {
-            if let Some(content) = &page.contents {
-                text.push_str(&format!("{:?}", content));
-                text.push('\n');
+    fn is_supported_file(path: &Path) -> bool {
+        if let Some(ext) = path.extension() {
+            if let Some(ext_str) = ext.to_str() {
+                return matches!(ext_str.to_lowercase().as_str(), "txt" | "pdf" | "md");
             }
         }
-
-        Ok(text)
-    }
-
-    async fn generate_embedding(&self, text: &str) -> Result<Vec<f32>> {
-        let req =
-            GenerateEmbeddingsRequest::new("mxbai-embed-large".to_string(), EmbeddingsInput::Single(text.to_string()));
-        let result = self.ollama.generate_embeddings(req).await?;
-        // embeddingsはVec<Vec<f32>>型なので、Singleの場合は最初の要素を返す
-        Ok(result.embeddings.into_iter().next().unwrap_or_default())
+        false
     }
 }
 
-// 独自のTextSplitter実装
+pub struct ProcessedDocument {
+    pub content: String,
+    pub source: String,
+    pub chunk_index: usize,
+}
+
 struct TextSplitter {
     chunk_size: usize,
     chunk_overlap: usize,
