@@ -4,22 +4,22 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "1.45.0", features = ["full"] }
+tokio = { version = "1.45.0", features = ["macros", "rt-multi-thread"] }
 serde_json = "1.0.140"
 clap = { version = "4.5.38", features = ["derive"] }
-anyhow = "1.0.98"
-thiserror = "2.0.12"
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json", "time", "local-time"] }
-time = { version = "0.3", features = ["formatting", "macros"] }
+anyhow = { version = "1.0.98", default-features = false }
+thiserror = { version = "2.0.12", default-features = false }
+tracing = { version = "0.1.41", default-features = false }
+tracing-subscriber = { version = "0.3.19", default-features = false }
+time = { version = "0.3", default-features = false }
 walkdir = "2.4.0"
-futures = "0.3.30"
+futures = { version = "0.3.30", default-features = false }
 chromadb = "2.2.2"
 ollama-rs = "0.3.1"
 async-trait = "0.1.77"
-pdf = "0.8.1"
+pdf = { version = "0.8.1", features = ["cache"], default-features = false }
 markdown = "0.3.0"
-chrono = "0.4.34"
+chrono = { version = "0.4.34", features = ["clock"], default-features = false }
 colored = "2.1.0"
 
 [[bin]]
