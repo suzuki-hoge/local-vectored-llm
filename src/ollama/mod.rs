@@ -19,8 +19,12 @@ impl OllamaClient {
 
     pub async fn answer(&self, query: &str, context: &[String]) -> Result<String> {
         let prompt = format!(
-            "以下の情報を参考に質問に答えてください。\n\n[参考情報]\n{}\n\n[質問]\n{}",
+            "{}\n{}\n{}\n{}\n{}\n{}",
+            "以下の [質問] に [参考情報] を踏まえ回答せよ",
+            "回答内容の「根拠となる情報源・出典」を明示すること",
+            "[参考情報]",
             context.join("\n"),
+            "[質問]",
             query
         );
         let req = GenerationRequest::new("7shi/ezo-gemma-2-jpn:2b-instruct-q8_0".to_string(), prompt);

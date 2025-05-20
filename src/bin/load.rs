@@ -31,11 +31,11 @@ async fn main() -> Result<()> {
     for (index, document) in documents.iter().enumerate() {
         match chroma.save(document).await {
             Ok(_) => {
-                info!("Saved: {} ( {} / {} )", &document.source, index + 1, documents.len());
+                info!("Saved: {} - {} [ {} / {} ]", &document.source, &document.chunk_index + 1, index + 1, documents.len());
                 success_count += 1;
             }
             Err(e) => {
-                warn!("Failed: {} [ e = {} ] ( {} / {} )", &document.source, e, index + 1, documents.len());
+                warn!("Failed: {} [ e = {} ] [ {} / {} ]", &document.source, e, index + 1, documents.len());
                 error_sources.push(&document.source);
             }
         }

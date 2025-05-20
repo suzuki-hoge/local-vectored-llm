@@ -15,6 +15,14 @@
 - Rust がインストールされていること ( ビルドする場合のみ )
 - Docker と Docker Compose がインストールされていること
 
+### PDF 解析の Rust プログラム外ツール
+
+```
+$ brew install tesseract
+$ brew install tesseract-lang
+$ brew install poppler
+```
+
 ### Rust ( ビルドする場合のみ )
 
 ```
