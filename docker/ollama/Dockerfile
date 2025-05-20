@@ -11,4 +11,7 @@ FROM ollama/ollama:0.6.8
 # RUN /bin/ollama serve & sleep 5 && ollama run hf.co/mmnga/cyberagent-DeepSeek-R1-Distill-Qwen-7B-Japanese-gguf
 
 # サイバーエージェントの大型モデル ( 標準設定だとメモリが足りず除外 )
-RUN /bin/ollama serve & sleep 5 && ollama run hf.co/mmnga/cyberagent-DeepSeek-R1-Distill-Qwen-14B-Japanese-gguf
+# RUN /bin/ollama serve & sleep 5 && ollama run hf.co/mmnga/cyberagent-DeepSeek-R1-Distill-Qwen-14B-Japanese-gguf
+
+# Gemini2 の日本語モデル
+RUN /bin/ollama serve & sleep 5 && ollama run 7shi/ezo-gemma-2-jpn:2b-instruct-q8_0

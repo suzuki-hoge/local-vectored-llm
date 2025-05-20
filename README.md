@@ -44,7 +44,7 @@ $ cargo run --bin load -- --input <dir-path>
 もしくは
 
 ```bash
-$ ./dist/load <dir-path>
+$ ./dist/load --input <dir-path>
 ```
 
 ### クエリの実行
@@ -52,13 +52,13 @@ $ ./dist/load <dir-path>
 保存されたベクトルを使用して質問に回答するには、以下のコマンドを実行します。
 
 ```bash
-$ cargo run --bin chat -- --interactive
+$ cargo run --bin chat -- --question <question>
 ```
 
 もしくは
 
 ```bash
-$ ./dist/chat -- --interactive
+$ ./dist/chat -- --question <question>
 ```
 
 ## サポートされているファイル形式

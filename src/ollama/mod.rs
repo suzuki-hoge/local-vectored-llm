@@ -23,7 +23,7 @@ impl OllamaClient {
             context.join("\n"),
             query
         );
-        let req = GenerationRequest::new("deepseek-r1:1.5b".to_string(), prompt);
+        let req = GenerationRequest::new("7shi/ezo-gemma-2-jpn:2b-instruct-q8_0".to_string(), prompt);
         let response = self.client.generate(req).await?;
         Ok(response.response)
     }

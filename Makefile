@@ -2,8 +2,8 @@ build:
 	@cargo clean
 	@cargo build --release
 	@mkdir -p dist
-	@cp target/release/vectorize dist
-	@cp target/release/query dist
+	@cp target/release/load dist
+	@cp target/release/chat dist
 
 test:
 	@cargo test
