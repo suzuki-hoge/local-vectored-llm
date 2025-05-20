@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 use local_vectored_llm::chroma::ChromaStore;
 use local_vectored_llm::document::DocumentProcessor;
-use local_vectored_llm::utils::logger;
+use local_vectored_llm::{info, warn};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -19,17 +19,33 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    logger::init_logging()?;
-
     let cli = Cli::parse();
     let processor = DocumentProcessor::new(cli.chunk_size);
     let chroma = ChromaStore::new().await?;
 
     let documents = processor.process_directory(&cli.input).await?;
-    for document in documents {
-        chroma.save(&document).await?;
+
+    let mut success_count = 0;
+    let mut error_sources = vec![];
+
+    for (index, document) in documents.iter().enumerate() {
+        match chroma.save(document).await {
+            Ok(_) => {
+                info!("Saved: {} ( {} / {} )", &document.source, index + 1, documents.len());
+                success_count += 1;
+            }
+            Err(e) => {
+                warn!("Failed: {} [ e = {} ] ( {} / {} )", &document.source, e, index + 1, documents.len());
+                error_sources.push(&document.source);
+            }
+        }
     }
 
-    println!("ドキュメントの処理が完了しました");
+    info!("Processed: success = {}, failure = {}", success_count, error_sources.len());
+
+    if !error_sources.is_empty() {
+        error_sources.into_iter().for_each(|s| warn!("Failed: {}", s))
+    }
+
     Ok(())
 }

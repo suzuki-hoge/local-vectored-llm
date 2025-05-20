@@ -1,3 +1,4 @@
+use crate::{info, warn};
 use anyhow::Result;
 use std::path::Path;
 
@@ -23,20 +24,19 @@ impl DocumentProcessor {
             if path.is_file() && Self::is_supported_file(path) {
                 let processed = self.process_file(path).await?;
                 documents.extend(processed);
+                info!("Converted: {}", path.display());
             }
         }
         Ok(documents)
     }
 
     async fn process_file(&self, path: &Path) -> Result<Vec<ProcessedDocument>> {
-        tracing::info!("Processing file: {:?}", path);
-
         let content = match path.extension().and_then(|ext| ext.to_str()) {
             Some("txt") => text::extract_text(path)?,
             Some("md") => markdown::extract_text(path)?,
             Some("pdf") => pdf::extract_text(path)?,
             _ => {
-                tracing::warn!("Unsupported file type: {:?}", path);
+                warn!("Unsupported file type: {}", path.display());
                 return Ok(Vec::new());
             }
         };

@@ -10,7 +10,8 @@ clap = { version = "4.5.38", features = ["derive"] }
 anyhow = "1.0.98"
 thiserror = "2.0.12"
 tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json", "time", "local-time"] }
+time = { version = "0.3", features = ["formatting", "macros"] }
 walkdir = "2.4.0"
 futures = "0.3.30"
 chromadb = "2.2.2"
@@ -18,6 +19,8 @@ ollama-rs = "0.3.1"
 async-trait = "0.1.77"
 pdf = "0.8.1"
 markdown = "0.3.0"
+chrono = "0.4.34"
+colored = "2.1.0"
 
 [[bin]]
 name = "load"

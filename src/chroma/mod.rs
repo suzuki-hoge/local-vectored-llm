@@ -55,8 +55,10 @@ impl ChromaStore {
     }
 
     async fn generate_embedding(&self, text: &str) -> Result<Vec<f32>> {
-        let req =
-            GenerateEmbeddingsRequest::new("7shi/ezo-gemma-2-jpn:2b-instruct-q8_0".to_string(), EmbeddingsInput::Single(text.to_string()));
+        let req = GenerateEmbeddingsRequest::new(
+            "7shi/ezo-gemma-2-jpn:2b-instruct-q8_0".to_string(),
+            EmbeddingsInput::Single(text.to_string()),
+        );
         let result = self.ollama.generate_embeddings(req).await?;
         Ok(result.embeddings.into_iter().next().unwrap_or_default())
     }
