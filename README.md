@@ -1,32 +1,28 @@
 # ローカルファイルベクトル化 RAG システム
 
-このプロジェクトは、ローカルファイルをベクトル化して Chroma DB に保存し、Deepseek LLM を使用した RAG ( Retrieval-Augmented Generation ) システムを提供します。
+このプロジェクトは、ローカルファイルをベクトル化して Chroma DB に保存し、Deepseek LLM を使用した RAG ( Retrieval-Augmented
+Generation ) システムを提供します。
 
 ## 構成
 
 - Rust アプリケーション ( 実行ファイルあり )
-- Docker コンテナの Ollama, Deepseek
+- Docker コンテナの Ollama ( + Gemini2 )
 - Docker コンテナの Chroma DB
 
 ## セットアップ
 
 ### 前提条件
 
-- Rust がインストールされていること ( ビルドする場合のみ )
+- PDF 解析ツール Poppler がインストールされていること
 - Docker と Docker Compose がインストールされていること
+- Rust がインストールされていること ( ビルドする場合のみ )
 
-### PDF 解析の Rust プログラム外ツール
+### Poppler のインストール ( mac OS )
 
 ```
 $ brew install tesseract
 $ brew install tesseract-lang
 $ brew install poppler
-```
-
-### Rust ( ビルドする場合のみ )
-
-```
-$ rustup install nightly
 ```
 
 ### Docker コンテナの起動
@@ -35,9 +31,11 @@ $ rustup install nightly
 $ docker compose up --detach
 ```
 
-これにより Ollama サーバー ( Deepseek モデル付き ) と Chroma DB サーバーが起動します。
+### Rust の nightly セットアップ ( ビルドする場合のみ )
 
-初回ビルド時は、Docker Desktop で 12G ほどメモリ割り当てを行う必要があります。
+```
+$ rustup install nightly
+```
 
 ## 使用方法
 
@@ -71,5 +69,14 @@ $ ./dist/chat -- --question <question>
 
 ## サポートされているファイル形式
 
-- テキストファイル ( `.txt` )
-- PDF ファイル ( `.pdf` )
+- `.txt`
+- `.pdf`
+- `.md`
+
+## ほか
+
+Ollama CLI を直接操作するには、以下のコマンドを実行します。
+
+```
+$ docker compose exec ollama ollama run 7shi/ezo-gemma-2-jpn:2b-instruct-q8_0
+```
