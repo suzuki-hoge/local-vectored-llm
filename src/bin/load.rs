@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-struct Cli {
+struct Arg {
     /// 処理するドキュメントのディレクトリパス
     #[arg(short, long)]
     input: PathBuf,
@@ -19,11 +19,11 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let cli = Cli::parse();
-    let processor = DocumentProcessor::new(cli.chunk_size);
+    let args = Arg::parse();
+    let processor = DocumentProcessor::new(args.chunk_size);
     let chroma = ChromaStore::new().await?;
 
-    let documents = processor.process_directory(&cli.input).await?;
+    let documents = processor.process_directory(&args.input).await?;
 
     let mut success_count = 0;
     let mut error_sources = vec![];
