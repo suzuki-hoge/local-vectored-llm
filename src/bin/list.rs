@@ -1,6 +1,5 @@
 use anyhow::Result;
-use clap::Parser;
-use local_vectored_llm::chroma::ChromaStore;
+use local_vectored_llm::chroma::store::ChromaStore;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -12,11 +11,8 @@ async fn main() -> Result<()> {
     println!("{}-+-{}", "-".repeat(30), "-".repeat(10));
 
     for collection in collections {
-        println!("{:<30} | {:<10}", 
-            collection.name,
-            collection.count
-        );
+        println!("{:<30} | {:<10}", collection.name, collection.count);
     }
 
     Ok(())
-} 
+}

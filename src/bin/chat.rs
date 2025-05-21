@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use local_vectored_llm::chroma::ChromaStore;
+use local_vectored_llm::chroma::store::ChromaStore;
 use local_vectored_llm::info;
 use local_vectored_llm::ollama::OllamaClient;
 

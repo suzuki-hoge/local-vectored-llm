@@ -1,5 +1,7 @@
+use crate::chroma::document::{ChunkMetadata, Document, FileMetadata, Metadata, SearchMetadata};
 use crate::{info, warn};
 use anyhow::Result;
+use chrono::DateTime;
 use std::path::Path;
 
 pub mod markdown;
@@ -15,7 +17,7 @@ impl DocumentProcessor {
         Self { chunk_size }
     }
 
-    pub async fn process_directory(&self, dir_path: &Path) -> Result<Vec<ProcessedDocument>> {
+    pub async fn process_directory(&self, dir_path: &Path) -> Result<Vec<Document>> {
         let mut result = Vec::new();
         for entry in walkdir::WalkDir::new(dir_path) {
             let entry = entry?;
@@ -30,7 +32,7 @@ impl DocumentProcessor {
         Ok(result)
     }
 
-    async fn process_file(&self, path: &Path) -> Result<Vec<ProcessedDocument>> {
+    async fn process_file(&self, path: &Path) -> Result<Vec<Document>> {
         let content = match path.extension().and_then(|ext| ext.to_str()) {
             Some("txt") => text::extract_text(path)?,
             Some("md") => markdown::extract_text(path)?,
@@ -41,18 +43,26 @@ impl DocumentProcessor {
             }
         };
 
+        let metadata = std::fs::metadata(path)?;
+
+        let created_at = DateTime::from(metadata.created()?);
+        let updated_at = DateTime::from(metadata.modified()?);
+
         // テキスト分割
         let splitter = TextSplitter::new(self.chunk_size, self.chunk_size / 10);
         let chunks = splitter.split(&content);
 
-        // 各チャンクをProcessedDocumentとして返す
         Ok(chunks
             .into_iter()
             .enumerate()
-            .map(|(i, chunk)| ProcessedDocument {
+            .map(|(index, chunk)| Document {
+                id: format!("{}-{}", path.to_string_lossy(), index),
                 content: chunk,
-                source: path.to_string_lossy().to_string(),
-                chunk_index: i,
+                metadata: Metadata {
+                    file: FileMetadata { path: path.to_string_lossy().to_string(), created_at, updated_at },
+                    chunk: ChunkMetadata { index },
+                    search: SearchMetadata {},
+                },
             })
             .collect())
     }
@@ -65,13 +75,6 @@ impl DocumentProcessor {
         }
         false
     }
-}
-
-#[derive(Debug)]
-pub struct ProcessedDocument {
-    pub content: String,
-    pub source: String,
-    pub chunk_index: usize,
 }
 
 struct TextSplitter {
@@ -127,8 +130,8 @@ mod tests {
 
         // 最初のチャンクの検証
         let first_chunk = &documents[0];
-        assert_eq!(first_chunk.source, test_file.to_string_lossy().to_string());
-        assert_eq!(first_chunk.chunk_index, 0);
+        assert_eq!(first_chunk.metadata.file.path, test_file.to_string_lossy().to_string());
+        assert_eq!(first_chunk.metadata.chunk.index, 0);
         assert!(first_chunk.content.starts_with(first_exp_text));
 
         // チャンクサイズの検証

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use local_vectored_llm::chroma::ChromaStore;
+use local_vectored_llm::chroma::store::ChromaStore;
 use local_vectored_llm::document::DocumentProcessor;
 use local_vectored_llm::{info, warn};
 use std::path::PathBuf;
@@ -31,12 +31,18 @@ async fn main() -> Result<()> {
     for (index, document) in documents.iter().enumerate() {
         match chroma.save(document).await {
             Ok(_) => {
-                info!("Saved: {} - {} [ {} / {} ]", &document.source, &document.chunk_index + 1, index + 1, documents.len());
+                info!(
+                    "Saved: {} - {} [ {} / {} ]",
+                    &document.metadata.file.path,
+                    &document.metadata.chunk.index + 1,
+                    index + 1,
+                    documents.len()
+                );
                 success_count += 1;
             }
             Err(e) => {
-                warn!("Failed: {} [ e = {} ] [ {} / {} ]", &document.source, e, index + 1, documents.len());
-                error_sources.push(&document.source);
+                warn!("Failed: {} [ e = {} ] [ {} / {} ]", &document.metadata.file.path, e, index + 1, documents.len());
+                error_sources.push(&document.metadata.file.path);
             }
         }
     }
