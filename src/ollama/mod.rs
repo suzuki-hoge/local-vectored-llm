@@ -1,3 +1,4 @@
+use crate::info;
 use anyhow::Result;
 use ollama_rs::generation::completion::request::GenerationRequest;
 use ollama_rs::Ollama;
@@ -28,6 +29,9 @@ impl OllamaClient {
             query
         );
         let req = GenerationRequest::new("7shi/ezo-gemma-2-jpn:2b-instruct-q8_0".to_string(), prompt);
+
+        info!("Wait response generation...");
+
         let response = self.client.generate(req).await?;
         Ok(response.response)
     }
