@@ -1,4 +1,3 @@
-use crate::info;
 use anyhow::Result;
 use ollama_rs::generation::completion::request::GenerationRequest;
 use ollama_rs::Ollama;
@@ -20,9 +19,10 @@ impl OllamaClient {
 
     pub async fn answer(&self, query: &str, context: &[String]) -> Result<String> {
         let prompt = format!(
-            "{}\n{}\n{}\n{}\n{}\n{}",
+            "{}\n{}\n{}\n{}\n{}\n{}\n{}",
             "以下の [質問] に [参考情報] を踏まえ回答せよ",
-            "回答内容の「根拠となる情報源・出典」を明示すること",
+            "回答内容の「根拠となる情報源・出典」を冒頭に必ず明示すること",
+            "[参考情報] が回答の助けにならないと判断した場合は、憶測や不確かな回答を表示せず [与えられたコンテキストからは回答できません] とだけはっきり回答すること",
             "[参考情報]",
             context.join("\n"),
             "[質問]",

@@ -72,17 +72,33 @@ impl ChromaStore {
         Ok(())
     }
 
-    pub async fn search(&self, query: &str, limit: usize, collection_name: &str) -> Result<Vec<String>> {
+    pub async fn search(&self, query: &str, limit: usize, collection_names: &[&str]) -> Result<Vec<String>> {
         let query_embedding = self.generate_embedding(query).await?;
-        let collection = self.client.get_collection(collection_name).await?;
-        let options = QueryOptions {
-            query_embeddings: Some(vec![query_embedding]),
-            n_results: Some(limit),
-            ..Default::default()
-        };
-        let results = collection.query(options, None).await?;
-        let docs = results.documents.unwrap_or_default();
-        Ok(docs.into_iter().flatten().collect())
+        let mut all_results = Vec::new();
+
+        for collection_name in collection_names {
+            let collection = self.client.get_collection(collection_name).await?;
+            let options = QueryOptions {
+                query_embeddings: Some(vec![query_embedding.clone()]),
+                n_results: Some(limit),
+                ..Default::default()
+            };
+            let results = collection.query(options, None).await?;
+            if let Some(docs) = results.documents {
+                all_results.extend(docs.into_iter().flatten());
+            }
+        }
+
+        // 結果を重複排除して返す
+        all_results.sort();
+        all_results.dedup();
+
+        // 指定されたlimitを超えないように調整
+        if all_results.len() > limit {
+            all_results.truncate(limit);
+        }
+
+        Ok(all_results)
     }
 
     async fn generate_embedding(&self, text: &str) -> Result<Vec<f32>> {

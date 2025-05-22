@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::Parser;
 use local_vectored_llm::chroma::store::ChromaStore;
-use local_vectored_llm::info;
 use local_vectored_llm::ollama::OllamaClient;
+use local_vectored_llm::{error, info};
 use std::io::{self, Write};
 
 #[derive(Parser)]
@@ -23,33 +23,50 @@ async fn main() -> Result<()> {
     let collections = chroma.get_collections().await?;
 
     // コレクション一覧を表示
-    println!("利用可能なコレクション:");
+    println!();
     for (i, collection) in collections.iter().enumerate() {
-        println!("{}. {} ({}件)", i + 1, collection.name, collection.count);
+        println!("{}. {:<30} ( {} documents )", i + 1, collection.name, collection.count);
     }
 
     // ユーザーにコレクションを選択させる
-    print!("コレクション番号を選択してください (1-{}): ", collections.len());
+    print!("\nChoose the collection you want to use ( e.g. 1,3,4 ): ");
     io::stdout().flush()?;
 
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
-    let selection: usize = input.trim().parse()?;
 
-    if selection < 1 || selection > collections.len() {
-        return Err(anyhow::anyhow!("無効なコレクション番号です"));
+    // 選択されたコレクション名を取得
+    let selected_collections: Vec<&str> = input
+        .trim()
+        .split(',')
+        .filter_map(|s| {
+            s.trim().parse::<usize>().ok().and_then(|n| {
+                if n > 0 && n <= collections.len() {
+                    Some(collections[n - 1].name.as_str())
+                } else {
+                    None
+                }
+            })
+        })
+        .collect();
+
+    if selected_collections.is_empty() {
+        error!("Unexpected collection.");
+        return Err(anyhow::anyhow!("exited."));
     }
 
-    let selected_collection = &collections[selection - 1];
-
-    info!("Search context ...");
-    let contexts = chroma.search(&args.question, 5, &selected_collection.name).await?;
+    info!("Search context... ( from [ {} ] )", selected_collections.join(", "));
+    let contexts = chroma.search(&args.question, 5, &selected_collections).await?;
     info!(
         "Found {} contexts: [ {} ]",
         contexts.len(),
-        contexts.iter().map(|c| format!("{} ...", c.chars().take(30).collect::<String>().replace("\n", ""))).collect::<Vec<_>>().join(", ")
+        contexts
+            .iter()
+            .map(|c| format!("{}...", c.chars().take(30).collect::<String>().replace("\n", "")))
+            .collect::<Vec<_>>()
+            .join(", ")
     );
-    info!("Wait response generation ...");
+    info!("Wait response generation...\n");
     let response = ollama.answer(&args.question, &contexts).await?;
     println!("{}", response.trim());
 
