@@ -32,7 +32,6 @@ impl Metadata {
     }
 
     pub fn from_map(map: Map<String, Value>) -> Self {
-        println!("{:?}", &map);
         Self {
             file: FileMetadata {
                 path: map.get("file_path").unwrap().as_str().unwrap().to_string(),
