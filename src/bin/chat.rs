@@ -70,5 +70,7 @@ async fn main() -> Result<()> {
     let response = ollama.answer(&args.question, &contexts).await?;
     println!("{}", response.trim());
 
+    info!("Complete");
+
     Ok(())
 }
