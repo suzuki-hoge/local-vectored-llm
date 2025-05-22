@@ -30,8 +30,6 @@ impl OllamaClient {
         );
         let req = GenerationRequest::new("7shi/ezo-gemma-2-jpn:2b-instruct-q8_0".to_string(), prompt);
 
-        info!("Wait response generation...");
-
         let response = self.client.generate(req).await?;
         Ok(response.response)
     }

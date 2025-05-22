@@ -20,12 +20,12 @@ async fn main() -> Result<()> {
     for (i, doc) in documents.iter().enumerate() {
         println!("{:<15} | {}", "No.", i + 1);
         println!("{:<15} | {}", "ID", doc.id);
-        println!("{:<15} | {}", "Body", doc.content.chars().take(80).collect::<String>().replace("\n", " "));
+        println!("{:<15} | {} ...", "Body", doc.content.chars().take(80).collect::<String>().replace("\n", " "));
         println!("{:<15} | {}", "file.path", &doc.metadata.file.path);
         println!("{:<15} | {}", "file.created_at", &doc.metadata.file.created_at);
         println!("{:<15} | {}", "file.updated_at", &doc.metadata.file.updated_at);
         println!("{:<15} | {}", "chunk.index", &doc.metadata.chunk.index);
-        println!("{}", "-".repeat(80));
+        println!("{}-+-{}", "-".repeat(15), "-".repeat(65));
     }
 
     Ok(())

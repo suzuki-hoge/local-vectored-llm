@@ -8,7 +8,6 @@ use ollama_rs::Ollama;
 
 pub struct ChromaStore {
     client: ChromaClient,
-    collection_name: String,
     ollama: Ollama,
 }
 
@@ -22,7 +21,7 @@ impl ChromaStore {
     pub async fn new() -> Result<Self> {
         let options = ChromaClientOptions { url: Some("http://localhost:18888".to_string()), ..Default::default() };
         let client = ChromaClient::new(options).await?;
-        Ok(Self { client, collection_name: "default".to_string(), ollama: Ollama::new("http://localhost", 11434) })
+        Ok(Self { client, ollama: Ollama::new("http://localhost", 11434) })
     }
 
     pub async fn get_collections(&self) -> Result<Vec<CollectionInfo>> {
@@ -34,6 +33,7 @@ impl ChromaStore {
             result.push(CollectionInfo { name: collection.name().to_string(), count });
         }
 
+        result.sort_by_key(|c| c.name.to_string());
         Ok(result)
     }
 
@@ -72,9 +72,9 @@ impl ChromaStore {
         Ok(())
     }
 
-    pub async fn search(&self, query: &str, limit: usize) -> Result<Vec<String>> {
+    pub async fn search(&self, query: &str, limit: usize, collection_name: &str) -> Result<Vec<String>> {
         let query_embedding = self.generate_embedding(query).await?;
-        let collection = self.client.get_collection(&self.collection_name).await?;
+        let collection = self.client.get_collection(collection_name).await?;
         let options = QueryOptions {
             query_embeddings: Some(vec![query_embedding]),
             n_results: Some(limit),
