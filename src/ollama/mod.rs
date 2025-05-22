@@ -2,6 +2,8 @@ use anyhow::Result;
 use ollama_rs::generation::completion::request::GenerationRequest;
 use ollama_rs::models::ModelOptions;
 use ollama_rs::Ollama;
+use futures::StreamExt;
+use std::io::{self, Write};
 
 pub struct OllamaClient {
     client: Ollama,
@@ -18,7 +20,7 @@ impl OllamaClient {
         Self { client: Ollama::new("http://localhost", 11434) }
     }
 
-    pub async fn answer(&self, query: &str, context: &[String]) -> Result<String> {
+    pub async fn streaming_answer(&self, query: &str, context: &[String]) -> Result<()> {
         let prompt = format!(
             "{}\n{}\n{}\n{}\n{}\n{}\n{}",
             "以下の [質問] に [参考情報] を踏まえ回答せよ",
@@ -62,7 +64,20 @@ impl OllamaClient {
                 .repeat_penalty(1.1),
         );
 
-        let response = self.client.generate(req).await?;
-        Ok(response.response)
+        let mut stream = self.client.generate_stream(req).await?;
+
+        while let Some(chunks) = stream.next().await {
+            match chunks {
+                Ok(responses) => {
+                    for response in responses {
+                        print!("{}", response.response);
+                        io::stdout().flush()?;
+                    }
+                }
+                Err(e) => return Err(anyhow::anyhow!("Stream error: {}", e)),
+            }
+        }
+
+        Ok(())
     }
 }

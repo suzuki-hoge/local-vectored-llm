@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 use local_vectored_llm::chroma::store::ChromaStore;
 use local_vectored_llm::ollama::OllamaClient;
-use local_vectored_llm::{error, info};
+use local_vectored_llm::{info};
 use std::io::{self, Write};
 
 #[derive(Parser)]
@@ -51,8 +51,7 @@ async fn main() -> Result<()> {
         .collect();
 
     if selected_collections.is_empty() {
-        error!("Unexpected collection.");
-        return Err(anyhow::anyhow!("exited."));
+        return Err(anyhow::anyhow!("Unexpected collection."));
     }
 
     info!("Search context... ( from [ {} ] )", selected_collections.join(", "));
@@ -67,10 +66,8 @@ async fn main() -> Result<()> {
             .join(", ")
     );
     info!("Wait response generation...\n");
-    let response = ollama.answer(&args.question, &contexts).await?;
-    println!("{}", response.trim());
+    ollama.streaming_answer(&args.question, &contexts).await?;
 
     info!("Complete");
-
     Ok(())
 }

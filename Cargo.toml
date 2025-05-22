@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+tokio = "1.0"
 serde_json = "1.0.140"
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0", default-features = false }
 clap = { version = "4.5.38", features = ["derive"] }
 anyhow = { version = "1.0", default-features = false }
 thiserror = { version = "2.0.12", default-features = false }
@@ -16,7 +16,7 @@ time = { version = "0.3", default-features = false }
 walkdir = "2.4.0"
 futures = { version = "0.3.30", default-features = false }
 chromadb = "2.2.2"
-ollama-rs = "0.3.1"
+ollama-rs = { version = "0.3.1", features = ["stream"] }
 async-trait = "0.1.77"
 pdf = { version = "0.8.1", default-features = false }
 markdown = "0.3.0"
