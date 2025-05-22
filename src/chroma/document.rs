@@ -2,6 +2,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 
+pub type CollectionName = String;
+
 #[derive(Debug)]
 pub struct Document {
     pub id: String,

@@ -23,26 +23,22 @@ async fn main() -> Result<()> {
     let processor = DocumentProcessor::new(args.chunk_size);
     let chroma = ChromaStore::new().await?;
 
-    let documents = processor.process_directory(&args.input).await?;
+    let processed = processor.process_directory(&args.input).await?;
 
     let mut success_count = 0;
     let mut error_sources = vec![];
 
-    for (index, document) in documents.iter().enumerate() {
-        match chroma.save(document).await {
-            Ok(_) => {
-                info!(
-                    "Saved: {} - {} [ {} / {} ]",
-                    &document.metadata.file.path,
-                    &document.metadata.chunk.index + 1,
-                    index + 1,
-                    documents.len()
-                );
-                success_count += 1;
-            }
-            Err(e) => {
-                warn!("Failed: {} [ e = {} ] [ {} / {} ]", &document.metadata.file.path, e, index + 1, documents.len());
-                error_sources.push(&document.metadata.file.path);
+    for (index, (documents, collection_name)) in processed.iter().enumerate() {
+        for document in documents {
+            match chroma.save(document, collection_name).await {
+                Ok(_) => {
+                    info!("[ {} / {} ] Saved: {}", index + 1, processed.len(), &document.id,);
+                    success_count += 1;
+                }
+                Err(e) => {
+                    warn!("[ {} / {} ] Failed: {}", index + 1, processed.len(), e,);
+                    error_sources.push(&document.metadata.file.path);
+                }
             }
         }
     }

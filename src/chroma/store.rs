@@ -1,4 +1,4 @@
-use crate::chroma::document::{Document, Metadata};
+use crate::chroma::document::{CollectionName, Document, Metadata};
 use anyhow::Result;
 use chromadb::client::ChromaClient;
 use chromadb::client::ChromaClientOptions;
@@ -56,10 +56,10 @@ impl ChromaStore {
         Ok(result)
     }
 
-    pub async fn save(&self, document: &Document) -> Result<()> {
+    pub async fn save(&self, document: &Document, collection_name: &CollectionName) -> Result<()> {
         let embedding = self.generate_embedding(&document.content).await?;
 
-        let collection = self.client.get_or_create_collection(&self.collection_name, None).await?;
+        let collection = self.client.get_or_create_collection(collection_name, None).await?;
 
         let entries = CollectionEntries {
             ids: vec![&document.id],
